@@ -11,11 +11,11 @@ class PdfReportClient
     private $url;
     private $pat;
 
-    public function __construct($url, $pat)
+    public function __construct($url, $pat, Client $client = null)
     {
         $this->url = $url;
         $this->pat = $pat;
-        $this->client = new Client([
+        $this->client = $client ?: new Client([
             'base_uri' => $this->url,
             'headers' => [
                 'Authorization' => 'Bearer ' . $this->pat,
