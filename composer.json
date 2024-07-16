@@ -1,0 +1,21 @@
+{
+    "name": "cx-reports/pdf-report-client",
+    "description": "A client for listing and downloading CxReports PDFs",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "PdfReportClient\\": "src/Client/"
+        }
+    },
+    "require": {
+        "guzzlehttp/guzzle": "^7.0"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Codaxy",
+            "email": "support@cx-reports.com"
+        }
+    ],
+    "minimum-stability": "stable"
+}
