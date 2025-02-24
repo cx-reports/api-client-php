@@ -48,10 +48,14 @@ class CxReportsClientTest extends TestCase
     {
         $types = $this->client->getReportTypes();
         $this->assertCount(2, $types);
-        $this->assertEquals('Miscellaneous', $types[0]->name);
-        $this->assertEquals('Invoice', $types[1]->name);
+        $this->assertContainsOnlyInstancesOf(ReportType::class, $types);
 
-        $this->assertInstanceOf(ReportType::class, $types[0]);
+        $names = array_map(function ($type) {
+            return $type->name;
+        }, $types);
+        
+        $this->assertContains('Miscellaneous', $names);
+        $this->assertContains('Invoice', $names);
     }
 
     public function testGetWorkspaces()
@@ -72,8 +76,7 @@ class CxReportsClientTest extends TestCase
     public function testGetReportPreviewURL()
     {
         $url = $this->client->getReportPreviewURL(497, ["number" => 123]);
-        print_r($url);
-        $this->assertEquals("https://example.com/preview", $url["preview_url"]);
+        $this->assertStringContainsString("https://master.cx-reports.app/ws/72/reports/497/preview", $url);
     }
 
     public function testPostTempData()

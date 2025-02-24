@@ -137,7 +137,7 @@ class CxReportsClient
         }
         $url = $this->url . '/ws/' . $this->default_workspace_id . '/reports/' . $reportId . '/preview?' . http_build_query($queryParams);
 
-        return ['preview_url' => $url];
+        return $url;
     }
 
     public function postTempData($data, $workspace_id = null)
