@@ -36,108 +36,139 @@ class CxReportsClient
         }
     }
 
-    private function buildUrl($path, $workspace_id = null){
-        // Workspace_id can be null. use default workspace in that case
-        $ws = $workspace_id == null ? $this->default_workspace_id : $workspace_id;
-        return $this->url . '/api/v1/ws/' . $ws . '/' . $path;
-    }
-
     public function listReports($type)
     {
+        $url = $this->buildUrlWithWorkspace('reports?type=' . $type);
+
         try {
-            $url = $this->buildUrl('reports?type=' . $type);
             $response = $this->client->get($url);
-            // check if response is successful. If not, throw exception
-            if($response->getStatusCode() != 200){
-                throw new \Exception('Error fetching reports');
-            }            
-            $data = json_decode($response->getBody(), true);
+            $data = $this->processResponse($response);
+            
             $reports = array_map(function ($reportData) {
                 return new Report($reportData);
             }, $data);
             return $reports;
         } catch (RequestException $e) {
-            return ['error' => $e->getMessage()];
+            return new \Exception('Error fetching reports');
         }
     }
 
     public function downloadPdf($reportId, $savePath)
     {
         try {
-            $response = $this->client->get('/reports/' . $reportId . '/pdf', ['sink' => $savePath]);
+            $url = $this->buildUrlWithWorkspace('reports/' . $reportId . '/pdf');
+            $response = $this->client->get($url, ['sink' => $savePath]);
             return $response->getStatusCode() === 200;
         } catch (RequestException $e) {
-            return ['error' => $e->getMessage()];
+            return new \Exception('Error fetching reports');
         }
     }
 
-    public function getReportTypes()
+    public function getReportTypes($workspace_id = null)
     {
+        $url = $this->buildUrlWithWorkspace('report-types', $workspace_id);
         try {
-            $response = $this->client->get('/report-types');
-            $data = json_decode($response->getBody(), true);
+            $response = $this->client->get($url);
+            $types = $this->processResponse($response);
             $types = array_map(function ($typeData) {
                 return new ReportType($typeData);
-            }, $data);
+            }, $types);
             return $types;
         } catch (RequestException $e) {
-            return ['error' => $e->getMessage()];
+            return new \Exception('Error fetching report types');
         }
     }
 
     public function getWorkspaces()
     {
+        $url = $this->buildUrl('workspaces');
         try {
-            $response = $this->client->get('/workspaces');
-            $data = json_decode($response->getBody(), true);
+            $response = $this->client->get($url);
+            $data = $this->processResponse($response);
             $workspaces = array_map(function ($workspaceData) {
                 return new Workspace($workspaceData);
             }, $data);
             return $workspaces;
         } catch (RequestException $e) {
-            return ['error' => $e->getMessage()];
+            return new \Exception('Error fetching workspaces');
         }
     }
 
     public function createNonceAuthToken()
     {
+        $url = $this->buildUrl('nonce-tokens');
         try {
-            $response = $this->client->post('/auth/nonce');
-            $data = json_decode($response->getBody(), true);
+            $response = $this->client->post($url);
+            $data = $this->processResponse($response);
             return new NonceToken($data);
         } catch (RequestException $e) {
-            return ['error' => $e->getMessage()];
+            return new \Exception('Error fetching nonce token');
         }
     }
 
-    public function getReportPreviewURL($reportType, $params, $data, $tmpDataId, $nonce)
+    public function getReportPreviewURL($reportId, $params = [], $data = [])
     {
-        try {
-            $response = $this->client->post('/reports/preview', [
-                'json' => [
-                    'reportType' => $reportType,
-                    'params' => $params,
-                    'data' => $data,
-                    'tmpDataId' => $tmpDataId,
-                    'nonce' => $nonce,
-                ],
-            ]);
-            return json_decode($response->getBody(), true);
-        } catch (RequestException $e) {
-            return ['error' => $e->getMessage()];
+        if(!empty($params)){
+            $prepared_params = json_encode($params);
+        } else {
+            $prepared_params = null;
         }
+
+        $tempDataId = null;
+        if(!empty($data)){
+            $prepared_data = json_encode($data);
+            $tmpData = $this->postTempData($prepared_data);
+            $tmpDataId = $tmpData->id;
+        } else {
+            $prepared_data = null;
+        }
+
+        $nonce = $this->createNonceAuthToken()->nonce;
+
+        $queryParams = [];
+        if($prepared_params != null){
+            $queryParams['params'] = $prepared_params;
+        }
+        if($prepared_data != null){
+            $queryParams['data'] = $prepared_data;
+        }
+        if($nonce != null){
+            $queryParams['nonce'] = $nonce;
+        }
+        $url = $this->url . '/ws/' . $this->default_workspace_id . '/reports/' . $reportId . '/preview?' . http_build_query($queryParams);
+
+        return ['preview_url' => $url];
     }
 
-    public function postTempData($data)
+    public function postTempData($data, $workspace_id = null)
     {
+        $url = $this->buildUrlWithWorkspace('temporary-data', $workspace_id);
+        // body should be a json, with key 'content' and value as the data
+        $body = json_encode(['content' => $data]);
         try {
-            $response = $this->client->post('/reports/temp-data', [
-                'json' => $data,
+            $response = $this->client->post($url, [
+                'headers' => ['Content-Type' => 'application/json'],
+                'body' => $body,
             ]);
-            $responseData = json_decode($response->getBody(), true);
-            return new TemporaryData($responseData);
+            return new TemporaryData(json_decode($response->getBody(), true));
         } catch (RequestException $e) {
-            return ['error' => $e->getMessage()];
+            return new \Exception('Error posting temporary data');
         }
+    }
+    
+    private function processResponse($response){
+        if($response->getStatusCode() != 200){
+            throw new \Exception('Error While running the request');
+        }
+        return json_decode($response->getBody(), true);
+    }
+
+    private function buildUrlWithWorkspace($path, $workspace_id = null){
+        $ws = $workspace_id == null ? $this->default_workspace_id : $workspace_id;
+        return $this->url . '/api/v1/ws/' . $ws . '/' . $path;
+    }
+
+    private function buildUrl($path){
+        return $this->url . '/api/v1/' . $path;
     }
 }
