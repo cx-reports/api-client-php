@@ -2,6 +2,7 @@
     "name": "cx-reports/api-client",
     "description": "A client for interacting and downloading reports from the CxReports",
     "type": "library",
+    "version": "0.0.1",
     "autoload": {
         "psr-4": {
             "CxReports\\Client\\": "src/Client",
