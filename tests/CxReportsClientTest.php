@@ -12,14 +12,16 @@ use CxReports\Models\Workspace;
 use CxReports\Models\NonceToken;
 use CxReports\Models\TemporaryData;
 
-
 class CxReportsClientTest extends TestCase
 {
     private $client;
 
     protected function setUp(): void
     {
-        $client = new CxReportsClient("https://master.cx-reports.app", "72", "9Py6MdgPOvIcXRc0l7SW2O/IFzbthKL/qI/jMHhMvxU=");
+        $url = "";
+        $workspace_id = 0;
+        $pat = "";
+        $client = new CxReportsClient($url, $workspace_id, $pat);
         $this->client = $client;
     }
 
