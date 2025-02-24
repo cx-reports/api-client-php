@@ -36,9 +36,9 @@ class CxReportsClient
         }
     }
 
-    public function listReports($type)
+    public function listReports($type, $workspace_id = null)
     {
-        $url = $this->buildUrlWithWorkspace('reports?type=' . $type);
+        $url = $this->buildUrlWithWorkspace('reports?type=' . $type, $workspace_id );
 
         try {
             $response = $this->client->get($url);
@@ -53,12 +53,16 @@ class CxReportsClient
         }
     }
 
-    public function downloadPdf($reportId, $savePath)
+    public function downloadPdf($reportId, $params = [], $workspace_id = null)
     {
+        $url = $this->buildUrlWithWorkspace('reports/' . $reportId . '/pdf', $workspace_id);
+        $encodedParams = $this->encodeReportPreviewParams($params);
         try {
-            $url = $this->buildUrlWithWorkspace('reports/' . $reportId . '/pdf');
-            $response = $this->client->get($url, ['sink' => $savePath]);
-            return $response->getStatusCode() === 200;
+            $response = $this->client->get($url, [
+                'query' => $encodedParams,
+            ]);
+            $pdf = $response->getBody()->getContents();
+            return $pdf;
         } catch (RequestException $e) {
             return new \Exception('Error fetching reports');
         }
@@ -106,13 +110,9 @@ class CxReportsClient
         }
     }
 
-    public function getReportPreviewURL($reportId, $params = [], $data = [])
+    public function getReportPreviewURL($reportId, $params = [], $workspace_id = null)
     {
-        if(!empty($params)){
-            $prepared_params = json_encode($params);
-        } else {
-            $prepared_params = null;
-        }
+        $prepared_params = $this->encodeReportPreviewParams($params);
 
         $tempDataId = null;
         if(!empty($data)){
@@ -123,6 +123,7 @@ class CxReportsClient
             $prepared_data = null;
         }
 
+        $ws = $workspace_id == null ? $this->default_workspace_id : $workspace_id;
         $nonce = $this->createNonceAuthToken()->nonce;
 
         $queryParams = [];
@@ -135,7 +136,7 @@ class CxReportsClient
         if($nonce != null){
             $queryParams['nonce'] = $nonce;
         }
-        $url = $this->url . '/ws/' . $this->default_workspace_id . '/reports/' . $reportId . '/preview?' . http_build_query($queryParams);
+        $url = $this->url . '/ws/' . $ws . '/reports/' . $reportId . '/preview?' . http_build_query($queryParams);
 
         return $url;
     }
@@ -170,5 +171,32 @@ class CxReportsClient
 
     private function buildUrl($path){
         return $this->url . '/api/v1/' . $path;
+    }
+
+    private function encodeReportPreviewParams($params){
+        $prepared_params = [];
+        if(!empty($params['params'])){
+            $prepared_params['params'] = json_encode($params['params']);
+        } else {
+            $prepared_params['params'] = null;
+        }
+        if(!empty($params['data'])){
+            $prepared_params['data'] = json_encode($params['data']);
+        } else {
+            $prepared_params['data'] = null;
+        }
+        if(!empty($params['nonce'])){
+            $prepared_params['nonce'] = $params['nonce'];
+        }
+        if(!empty($params['tempDataId'])){
+            $prepared_params['tempDataId'] = $params['tempDataId'];
+        }
+        if(!empty($params['timezone'])){
+            $prepared_params['timezone'] = $params['timezone'];
+        } else {
+            $prepared_params['timezone'] = 'UTC';
+        }
+
+        return $prepared_params;
     }
 }

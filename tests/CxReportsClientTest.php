@@ -37,9 +37,9 @@ class CxReportsClientTest extends TestCase
     public function testDownloadPdf()
     {
         $savePath = "./tmp/report.pdf";
-        $result = $this->client->downloadPdf("496", $savePath);
+        $pdf = $this->client->downloadPdf("497", ["params" => ["number" => 123]]);
+        file_put_contents($savePath, $pdf);
 
-        $this->assertTrue($result);
         $this->assertFileExists($savePath);
 
         // Clean up
@@ -77,7 +77,7 @@ class CxReportsClientTest extends TestCase
 
     public function testGetReportPreviewURL()
     {
-        $url = $this->client->getReportPreviewURL(497, ["number" => 123]);
+        $url = $this->client->getReportPreviewURL(497, ["params" => ["number" => 123]]);
         $this->assertStringContainsString("https://master.cx-reports.app/ws/72/reports/497/preview", $url);
     }
 
