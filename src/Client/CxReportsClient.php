@@ -47,6 +47,10 @@ class CxReportsClient
         try {
             $url = $this->buildUrl('reports?type=' . $type);
             $response = $this->client->get($url);
+            // check if response is successful. If not, throw exception
+            if($response->getStatusCode() != 200){
+                throw new \Exception('Error fetching reports');
+            }            
             $data = json_decode($response->getBody(), true);
             $reports = array_map(function ($reportData) {
                 return new Report($reportData);
