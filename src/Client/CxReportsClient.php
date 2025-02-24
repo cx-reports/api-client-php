@@ -10,6 +10,7 @@ use CxReports\Models\Workspace;
 use CxReports\Models\TemporaryData;
 use CxReports\Models\TemporaryDataCreate;
 use CxReports\Models\NonceToken;
+use CxReports\Models\ReportPDF;
 
 class CxReportsClient
 {
@@ -61,8 +62,19 @@ class CxReportsClient
             $response = $this->client->get($url, [
                 'query' => $encodedParams,
             ]);
+            $body = $response->getBody();
+            $reportName = $response->getHeader('Content-Disposition')[0];
+            //filename="Sample report.pdf"; filename*=UTF-8''Sample%20report.pdf....... 
+            // extract the filename from the header
+            $reportName = explode('filename*=UTF-8\'\'', $reportName)[1];
+            $reportName = str_replace('"', '', $reportName);
+            $reportName = str_replace(' ', '_', $reportName);
+            $reportName = urldecode($reportName);
             $pdf = $response->getBody()->getContents();
-            return $pdf;
+            return new ReportPDF([
+                'filename' => $reportName,
+                'pdf' => $pdf,
+            ]);
         } catch (RequestException $e) {
             return new \Exception('Error fetching reports');
         }

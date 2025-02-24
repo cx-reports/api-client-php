@@ -36,9 +36,29 @@ class CxReportsClientTest extends TestCase
 
     public function testDownloadPdf()
     {
-        $savePath = "./tmp/report.pdf";
-        $pdf = $this->client->downloadPdf("497", ["params" => ["number" => 123]]);
-        file_put_contents($savePath, $pdf);
+        $savePath = "./tmp/";
+        $response = $this->client->downloadPdf("497", ["params" => ["number" => 123]]);
+        $this->assertNotEmpty($response->fileName);
+        $this->assertNotEmpty($response->pdf);
+
+        $savePath .= $response->fileName;
+        file_put_contents($savePath, $response->pdf);
+
+        $this->assertFileExists($savePath);
+
+        // Clean up
+        unlink($savePath);
+    }
+
+    public function testDownloadPdfFromAnotherWs()
+    {
+        $savePath = "./tmp/";
+        $response = $this->client->downloadPdf("149", [], 26);
+        $this->assertNotEmpty($response->fileName);
+        $this->assertNotEmpty($response->pdf);
+
+        $savePath .= $response->fileName;
+        file_put_contents($savePath, $response->pdf);
 
         $this->assertFileExists($savePath);
 
