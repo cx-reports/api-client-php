@@ -1,39 +1,52 @@
 <?php
 
-namespace PdfReportClient;
+namespace CxReports\Client;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
-use PdfReportClient\Models\Report;
-use PdfReportClient\Models\ReportType;
-use PdfReportClient\Models\Workspace;
-use PdfReportClient\Models\TemporaryData;
-use PdfReportClient\Models\TemporaryDataCreate;
-use PdfReportClient\Models\NonceToken;
+use CxReports\Models\Report;
+use CxReports\Models\ReportType;
+use CxReports\Models\Workspace;
+use CxReports\Models\TemporaryData;
+use CxReports\Models\TemporaryDataCreate;
+use CxReports\Models\NonceToken;
 
-class PdfReportClient
+class CxReportsClient
 {
     private $client;
     private $url;
     private $pat;
+    private $default_workspace_id;
 
-    public function __construct($url, $pat, Client $client = null)
+    public function __construct($url, $workspace_id, $pat, Client $client = null)
     {
         $this->url = $url;
         $this->pat = $pat;
-        $this->client = $client ?: new Client([
-            'base_uri' => $this->url,
-            'headers' => [
-                'Authorization' => 'Bearer ' . $this->pat,
-                'Accept' => 'application/json',
-            ],
-        ]);
+        $this->default_workspace_id = $workspace_id;
+        if($client == null){
+            $this->client = new Client([
+                'base_uri' => $this->url,
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $this->pat,
+                    'Accept' => 'application/json',
+                ],
+            ]);
+        } else {
+            $this->client = $client;
+        }
     }
 
-    public function listReports()
+    private function buildUrl($path, $workspace_id = null){
+        // Workspace_id can be null. use default workspace in that case
+        $ws = $workspace_id == null ? $this->default_workspace_id : $workspace_id;
+        return $this->url . '/api/v1/ws/' . $ws . '/' . $path;
+    }
+
+    public function listReports($type)
     {
         try {
-            $response = $this->client->get('/reports');
+            $url = $this->buildUrl('reports?type=' . $type);
+            $response = $this->client->get($url);
             $data = json_decode($response->getBody(), true);
             $reports = array_map(function ($reportData) {
                 return new Report($reportData);

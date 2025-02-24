@@ -1,6 +1,6 @@
 <?php
 
-namespace PdfReportClient\Models;
+namespace CxReports\Models;
 
 class TemporaryDataCreate
 {
