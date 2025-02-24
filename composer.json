@@ -1,6 +1,6 @@
 {
-    "name": "cx-reports/pdf-report-client",
-    "description": "A client for listing and downloading CxReports PDFs",
+    "name": "cx-reports/api-client",
+    "description": "A client for interacting and downloading reports from the CxReports",
     "type": "library",
     "autoload": {
         "psr-4": {
