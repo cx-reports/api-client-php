@@ -10,6 +10,8 @@ class ReportExportRequest
     public $timezone;
     public $format;
     public $includeAttachments;
+    public $theme;
+    public $template;
 
     public function __construct($data = [])
     {
@@ -19,5 +21,7 @@ class ReportExportRequest
         $this->timezone = $data['timezone'] ?? null;
         $this->format = $data['format'] ?? null;
         $this->includeAttachments = $data['includeAttachments'] ?? null;
+        $this->theme = $data['theme'] ?? null;
+        $this->template = $data['template'] ?? null;
     }
 }

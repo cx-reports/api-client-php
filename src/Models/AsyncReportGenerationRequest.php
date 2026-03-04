@@ -12,6 +12,8 @@ class AsyncReportGenerationRequest
     public $includeAttachments;
     public $excludePages;
     public $tempDataId;
+    public $theme;
+    public $template;
 
     public function __construct($data = [])
     {
@@ -23,5 +25,7 @@ class AsyncReportGenerationRequest
         $this->includeAttachments = $data['includeAttachments'] ?? null;
         $this->excludePages = $data['excludePages'] ?? null;
         $this->tempDataId = $data['tempDataId'] ?? null;
+        $this->theme = $data['theme'] ?? null;
+        $this->template = $data['template'] ?? null;
     }
 }

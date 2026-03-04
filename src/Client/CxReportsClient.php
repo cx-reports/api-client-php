@@ -21,6 +21,8 @@ use CxReports\Models\JobRun;
 use CxReports\Models\JobRunRequest;
 use CxReports\Models\JobRunStatus;
 use CxReports\Models\TemporaryFileStatusResponse;
+use CxReports\Models\Theme;
+use CxReports\Models\Template;
 
 
 class CxReportsClient
@@ -268,6 +270,34 @@ class CxReportsClient
         }
     }
 
+    public function getThemes($workspace_id = null)
+    {
+        $url = $this->buildUrlWithWorkspace('themes', $workspace_id);
+        try {
+            $response = $this->client->get($url);
+            $data = $this->processResponse($response);
+            return array_map(function ($themeData) {
+                return new Theme($themeData);
+            }, $data);
+        } catch (RequestException $e) {
+            return new \Exception('Error fetching themes');
+        }
+    }
+
+    public function getTemplates($workspace_id = null)
+    {
+        $url = $this->buildUrlWithWorkspace('templates', $workspace_id);
+        try {
+            $response = $this->client->get($url);
+            $data = $this->processResponse($response);
+            return array_map(function ($templateData) {
+                return new Template($templateData);
+            }, $data);
+        } catch (RequestException $e) {
+            return new \Exception('Error fetching templates');
+        }
+    }
+
     public function getWorkspaces()
     {
         $url = $this->buildUrl('workspaces');
@@ -303,7 +333,7 @@ class CxReportsClient
         if (!empty($data)) {
             $prepared_data = json_encode($data);
             $tmpData = $this->postTempData($prepared_data);
-            $tmpDataId = $tmpData->id;
+            $tmpDataId = $tmpData->tempDataId;
         } else {
             $prepared_data = null;
         }
@@ -398,7 +428,12 @@ class CxReportsClient
         if (!empty($params['lang'])) {
             $prepared_params['lang'] = $params['lang'];
         }
-
+        if (!empty($params['theme'])) {
+            $prepared_params['theme'] = $params['theme'];
+        }
+        if (!empty($params['template'])) {
+            $prepared_params['template'] = $params['template'];
+        }
         return $prepared_params;
     }
 }
