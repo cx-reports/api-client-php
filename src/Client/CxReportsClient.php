@@ -395,17 +395,13 @@ class CxReportsClient
         } else {
             $prepared_params['timezone'] = 'UTC';
         }
-        if (!empty($params['format'])) {
+        if (isset($params['format']) && $params['format'] !== '') {
             $prepared_params['format'] = $params['format'] instanceof DocumentFileFormat
                 ? $params['format']->value
                 : $params['format'];
-        } else {
-            $prepared_params['format'] = DocumentFileFormat::pdf->value;
         }
-        if (!empty($params['includeAttachments'])) {
-            $prepared_params['includeAttachments'] = $params['includeAttachments'];
-        } else {
-            $prepared_params['includeAttachments'] = false;
+        if (isset($params['includeAttachments'])) {
+            $prepared_params['includeAttachments'] = $params['includeAttachments'] ? 'true' : 'false';
         }
         if (!empty($params['lang'])) {
             $prepared_params['lang'] = $params['lang'];
