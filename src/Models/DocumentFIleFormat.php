@@ -2,10 +2,11 @@
 
 namespace CxReports\Models;
 
-enum DocumentFIleFormat{
-    case pdf; 
-    case docx;
-    case xlsx;
-    case pptx; 
-    case html;
+enum DocumentFileFormat: string
+{
+    case pdf = 'pdf';
+    case docx = 'docx';
+    case xlsx = 'xlsx';
+    case pptx = 'pptx';
+    case html = 'html';
 }

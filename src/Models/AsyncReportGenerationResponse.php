@@ -8,6 +8,6 @@ class AsyncReportGenerationResponse
 
     public function __construct($data)
     {
-        $this->temporaryFileId = $data['temporaryFileId'];
+        $this->temporaryFileId = $data['temporaryFileId'] ?? null;
     }
 }

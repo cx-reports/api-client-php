@@ -10,8 +10,8 @@ class ReportPage
 
     public function __construct($data)
     {
-        $this->id = $data['id'];
-        $this->name = $data['name'];
-        $this->type = $data['type'];
+        $this->id = $data['id'] ?? null;
+        $this->name = $data['name'] ?? null;
+        $this->type = isset($data['type']) ? ReportPageType::from($data['type']) : null;
     }
 }

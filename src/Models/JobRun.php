@@ -8,6 +8,6 @@ class JobRun
 
     public function __construct($data)
     {
-        $this->jobRunId = $data['jobRunId'];
+        $this->jobRunId = $data['jobRunId'] ?? null;
     }
 }

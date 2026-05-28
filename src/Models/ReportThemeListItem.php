@@ -2,7 +2,7 @@
 
 namespace CxReports\Models;
 
-class Theme
+class ReportThemeListItem
 {
     public $id;
     public $name;
@@ -10,7 +10,7 @@ class Theme
 
     public function __construct($data)
     {
-        $this->id = $data['id'];
+        $this->id = $data['id'] ?? null;
         $this->name = $data['name'] ?? null;
         $this->code = $data['code'] ?? null;
     }

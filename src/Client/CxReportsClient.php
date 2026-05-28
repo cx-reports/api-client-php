@@ -15,15 +15,14 @@ use CxReports\Models\ReportPage;
 use CxReports\Models\ReportPDF;
 use CxReports\Models\AsyncReportGenerationRequest;
 use CxReports\Models\AsyncReportGenerationResponse;
-use CxReports\Models\DocumentFIleFormat;
+use CxReports\Models\DocumentFileFormat;
 use CxReports\Models\Job;
 use CxReports\Models\JobRun;
 use CxReports\Models\JobRunRequest;
 use CxReports\Models\JobRunStatus;
 use CxReports\Models\TemporaryFileStatusResponse;
-use CxReports\Models\Theme;
-use CxReports\Models\Template;
-
+use CxReports\Models\ReportThemeListItem;
+use CxReports\Models\ReportTemplate;
 
 class CxReportsClient
 {
@@ -58,7 +57,7 @@ class CxReportsClient
             $data = $this->processResponse($response);
             return new TemporaryFileStatusResponse($data);
         } catch (RequestException $e) {
-            return new \Exception('Error getting export status');
+            throw new \Exception('Error getting export status: ' . $e->getMessage());
         }
     }
 
@@ -67,20 +66,14 @@ class CxReportsClient
         $url = $this->buildUrlWithWorkspace('exports/' . $tempFileId . '/content', $workspace_id);
         try {
             $response = $this->client->get($url);
-            $reportName = $response->getHeader('Content-Disposition')[0];
-            //filename="Sample report.pdf"; filename*=UTF-8''Sample%20report.pdf....... 
-            // extract the filename from the header
-            $reportName = explode('filename*=UTF-8\'\'', $reportName)[1];
-            $reportName = str_replace('"', '', $reportName);
-            $reportName = str_replace(' ', '_', $reportName);
-            $reportName = urldecode($reportName);
+            $reportName = $this->extractFilenameFromContentDisposition($response);
             $pdf = $response->getBody()->getContents();
             return new ReportPDF([
                 'filename' => $reportName,
                 'pdf' => $pdf,
             ]);
         } catch (RequestException $e) {
-            return new \Exception('Error fetching report pages');
+            throw new \Exception('Error downloading export content: ' . $e->getMessage());
         }
     }
 
@@ -92,61 +85,60 @@ class CxReportsClient
             $response = $this->client->get($url);
             $data = $this->processResponse($response);
 
-            $jobs = array_map(function ($jobData) {
+            return array_map(function ($jobData) {
                 return new Job($jobData);
             }, $data);
-            return $jobs;
         } catch (RequestException $e) {
-            return new \Exception('Error fetching jobs');
+            throw new \Exception('Error fetching jobs: ' . $e->getMessage());
         }
     }
 
-    public function startNewJobRun($jobid, JobRunRequest $requestBody, $workspace_id = null)
+    public function startNewJobRun($jobIdOrCode, JobRunRequest $requestBody, $workspace_id = null)
     {
-        $url = $this->buildUrlWithWorkspace('jobs/' . $jobid . '/runs', $workspace_id);
+        $url = $this->buildUrlWithWorkspace('jobs/' . $jobIdOrCode . '/runs', $workspace_id);
         try {
             $response = $this->client->post($url, [
-                'json' => $requestBody
+                'json' => $requestBody,
             ]);
             $data = $this->processResponse($response);
             return new JobRun($data);
         } catch (RequestException $e) {
-            return new \Exception('Error starting new Job Run');
+            throw new \Exception('Error starting new Job Run: ' . $e->getMessage());
         }
     }
 
-    public function getJobRunStatus($jobid, $runId, $workspace_id = null)
+    public function getJobRunStatus($jobIdOrCode, $jobRunId, $workspace_id = null)
     {
-        $url = $this->buildUrlWithWorkspace('jobs/' . $jobid . '/runs/' . $runId . '/status', $workspace_id);
+        $url = $this->buildUrlWithWorkspace('jobs/' . $jobIdOrCode . '/runs/' . $jobRunId . '/status', $workspace_id);
         try {
             $response = $this->client->get($url);
             $data = $this->processResponse($response);
             return new JobRunStatus($data);
         } catch (RequestException $e) {
-            return new \Exception('Error fetching JobRun status');
+            throw new \Exception('Error fetching JobRun status: ' . $e->getMessage());
         }
     }
 
-    public function generateJobRunReviewDocument($jobid, $runId, $workspace_id = null)
+    public function generateJobRunReviewDocument($jobIdOrCode, $jobRunId, $workspace_id = null)
     {
-        $url = $this->buildUrlWithWorkspace('jobs/' . $jobid . '/runs/' . $runId . '/generate-review-document', $workspace_id);
+        $url = $this->buildUrlWithWorkspace('jobs/' . $jobIdOrCode . '/runs/' . $jobRunId . '/generate-review-document', $workspace_id);
         try {
             $response = $this->client->post($url);
             $data = $this->processResponse($response);
             return new AsyncReportGenerationResponse($data);
         } catch (RequestException $e) {
-            return new \Exception('Error generating Job Run review document');
+            throw new \Exception('Error generating Job Run review document: ' . $e->getMessage());
         }
     }
 
-    public function deliverAllJobRunEntries($jobid, $runId, $workspace_id = null)
+    public function deliverAllJobRunEntries($jobIdOrCode, $jobRunId, $workspace_id = null)
     {
-        $url = $this->buildUrlWithWorkspace('jobs/' . $jobid . '/runs/' . $runId . '/deliver', $workspace_id);
+        $url = $this->buildUrlWithWorkspace('jobs/' . $jobIdOrCode . '/runs/' . $jobRunId . '/deliver', $workspace_id);
         try {
-            $response = $this->client->post($url);
+            $this->client->post($url);
             return true;
         } catch (RequestException $e) {
-            return new \Exception('Error generating Job Run review document');
+            throw new \Exception('Error delivering job run entries: ' . $e->getMessage());
         }
     }
 
@@ -158,31 +150,28 @@ class CxReportsClient
             $response = $this->client->get($url);
             $data = $this->processResponse($response);
 
-            $reports = array_map(function ($reportData) {
+            return array_map(function ($reportData) {
                 return new Report($reportData);
             }, $data);
-            return $reports;
         } catch (RequestException $e) {
-            return new \Exception('Error fetching reports');
+            throw new \Exception('Error fetching reports: ' . $e->getMessage());
         }
     }
 
-    public function listReportPages($reportId, $workspace_id = null)
+    public function listReportPages($reportIdOrTypeCode, $workspace_id = null)
     {
-        $url = $this->buildUrlWithWorkspace('reports/' . $reportId . '/pages', $workspace_id);
+        $url = $this->buildUrlWithWorkspace('reports/' . $reportIdOrTypeCode . '/pages', $workspace_id);
         try {
             $response = $this->client->get($url);
             $data = $this->processResponse($response);
 
-            $reportPages = array_map(function ($pageData) {
+            return array_map(function ($pageData) {
                 return new ReportPage($pageData);
             }, $data);
-            return $reportPages;
         } catch (RequestException $e) {
-            return new \Exception('Error fetching report pages');
+            throw new \Exception('Error fetching report pages: ' . $e->getMessage());
         }
     }
-
 
     public function downloadPdf($reportId, $params = [], $workspace_id = null)
     {
@@ -192,24 +181,16 @@ class CxReportsClient
             $response = $this->client->get($url, [
                 'query' => $encodedParams,
             ]);
-            $body = $response->getBody();
-            $reportName = $response->getHeader('Content-Disposition')[0];
-            //filename="Sample report.pdf"; filename*=UTF-8''Sample%20report.pdf....... 
-            // extract the filename from the header
-            $reportName = explode('filename*=UTF-8\'\'', $reportName)[1];
-            $reportName = str_replace('"', '', $reportName);
-            $reportName = str_replace(' ', '_', $reportName);
-            $reportName = urldecode($reportName);
+            $reportName = $this->extractFilenameFromContentDisposition($response);
             $pdf = $response->getBody()->getContents();
             return new ReportPDF([
                 'filename' => $reportName,
                 'pdf' => $pdf,
             ]);
         } catch (RequestException $e) {
-            return new \Exception('Error fetching reports');
+            throw new \Exception('Error downloading PDF: ' . $e->getMessage());
         }
     }
-
 
     public function downloadPdfWithData($reportId, ReportExportRequest $requestBody, $workspace_id = null)
     {
@@ -219,17 +200,8 @@ class CxReportsClient
             $response = $this->client->post($url, [
                 'json' => $requestBody,
             ]);
-
-            $reportName = $response->getHeader('Content-Disposition')[0];
-            // filename="Sample report.pdf"; filename*=UTF-8''Sample%20report.pdf....... 
-            // extract the filename from the header
-            $reportName = explode('filename*=UTF-8\'\'', $reportName)[1];
-            $reportName = str_replace('"', '', $reportName);
-            $reportName = str_replace(' ', '_', $reportName);
-            $reportName = urldecode($reportName);
-
+            $reportName = $this->extractFilenameFromContentDisposition($response);
             $pdf = $response->getBody()->getContents();
-
             return new ReportPDF([
                 'filename' => $reportName,
                 'pdf' => $pdf,
@@ -244,16 +216,14 @@ class CxReportsClient
         $url = $this->buildUrlWithWorkspace('reports/' . $reportId . '/export', $workspace_id);
         try {
             $response = $this->client->post($url, [
-                'json' => $requestBody, 
+                'json' => $requestBody,
             ]);
             $exportResponse = $this->processResponse($response);
             return new AsyncReportGenerationResponse($exportResponse);
-        } catch (RequestException $th) {
-            throw new \Exception('Failed to start async export: ' . $th->getMessage());
+        } catch (RequestException $e) {
+            throw new \Exception('Failed to start async export: ' . $e->getMessage());
         }
     }
-
-
 
     public function getReportTypes($workspace_id = null)
     {
@@ -261,12 +231,11 @@ class CxReportsClient
         try {
             $response = $this->client->get($url);
             $types = $this->processResponse($response);
-            $types = array_map(function ($typeData) {
+            return array_map(function ($typeData) {
                 return new ReportType($typeData);
             }, $types);
-            return $types;
         } catch (RequestException $e) {
-            return new \Exception('Error fetching report types');
+            throw new \Exception('Error fetching report types: ' . $e->getMessage());
         }
     }
 
@@ -277,10 +246,10 @@ class CxReportsClient
             $response = $this->client->get($url);
             $data = $this->processResponse($response);
             return array_map(function ($themeData) {
-                return new Theme($themeData);
+                return new ReportThemeListItem($themeData);
             }, $data);
         } catch (RequestException $e) {
-            return new \Exception('Error fetching themes');
+            throw new \Exception('Error fetching themes: ' . $e->getMessage());
         }
     }
 
@@ -291,10 +260,10 @@ class CxReportsClient
             $response = $this->client->get($url);
             $data = $this->processResponse($response);
             return array_map(function ($templateData) {
-                return new Template($templateData);
+                return new ReportTemplate($templateData);
             }, $data);
         } catch (RequestException $e) {
-            return new \Exception('Error fetching templates');
+            throw new \Exception('Error fetching templates: ' . $e->getMessage());
         }
     }
 
@@ -304,12 +273,11 @@ class CxReportsClient
         try {
             $response = $this->client->get($url);
             $data = $this->processResponse($response);
-            $workspaces = array_map(function ($workspaceData) {
+            return array_map(function ($workspaceData) {
                 return new Workspace($workspaceData);
             }, $data);
-            return $workspaces;
         } catch (RequestException $e) {
-            return new \Exception('Error fetching workspaces');
+            throw new \Exception('Error fetching workspaces: ' . $e->getMessage());
         }
     }
 
@@ -321,45 +289,35 @@ class CxReportsClient
             $data = $this->processResponse($response);
             return new NonceToken($data);
         } catch (RequestException $e) {
-            return new \Exception('Error fetching nonce token');
+            throw new \Exception('Error fetching nonce token: ' . $e->getMessage());
         }
     }
 
     public function getReportPreviewURL($reportId, $params = [], $workspace_id = null)
     {
-        $prepared_params = $this->encodeReportPreviewParams($params);
-
-        $tempDataId = null;
-        if (!empty($data)) {
-            $prepared_data = json_encode($data);
-            $tmpData = $this->postTempData($prepared_data);
-            $tmpDataId = $tmpData->tempDataId;
-        } else {
-            $prepared_data = null;
-        }
-
         $ws = $workspace_id == null ? $this->default_workspace_id : $workspace_id;
-        $nonce = $this->createNonceAuthToken()->nonce;
 
-        $queryParams = [];
-        if ($prepared_params != null) {
-            $queryParams['params'] = $prepared_params;
+        if (!empty($params['data'])) {
+            $tmpData = $this->postTempData(json_encode($params['data']), $workspace_id);
+            $params['tempDataId'] = $tmpData->tempDataId;
+            unset($params['data']);
         }
-        if ($prepared_data != null) {
-            $queryParams['data'] = $prepared_data;
-        }
-        if ($nonce != null) {
-            $queryParams['nonce'] = $nonce;
-        }
-        $url = $this->url . '/ws/' . $ws . '/reports/' . $reportId . '/preview?' . http_build_query($queryParams);
 
-        return $url;
+        $params['nonce'] = $this->createNonceAuthToken()->nonce;
+
+        $queryParams = array_filter(
+            $this->encodeReportPreviewParams($params),
+            function ($v) {
+                return $v !== null;
+            }
+        );
+
+        return $this->url . '/ws/' . $ws . '/reports/' . $reportId . '/preview?' . http_build_query($queryParams);
     }
 
     public function postTempData($data, $workspace_id = null)
     {
         $url = $this->buildUrlWithWorkspace('temporary-data', $workspace_id);
-        // body should be a json, with key 'content' and value as the data
         $body = json_encode(['content' => $data]);
         try {
             $response = $this->client->post($url, [
@@ -368,7 +326,7 @@ class CxReportsClient
             ]);
             return new TemporaryData(json_decode($response->getBody(), true));
         } catch (RequestException $e) {
-            return new \Exception('Error posting temporary data');
+            throw new \Exception('Error posting temporary data: ' . $e->getMessage());
         }
     }
 
@@ -389,6 +347,28 @@ class CxReportsClient
     private function buildUrl($path)
     {
         return $this->url . '/api/v1/' . $path;
+    }
+
+    private function extractFilenameFromContentDisposition($response, $fallback = 'download')
+    {
+        $headers = $response->getHeader('Content-Disposition');
+        if (empty($headers)) {
+            return $fallback;
+        }
+        $header = $headers[0];
+
+        // RFC 5987 encoded form: filename*=UTF-8''<percent-encoded>
+        if (preg_match("/filename\*\s*=\s*UTF-8''([^;]+)/i", $header, $m)) {
+            $name = urldecode(trim($m[1], '"'));
+            return str_replace(' ', '_', $name);
+        }
+
+        // Plain form: filename="..."
+        if (preg_match('/filename\s*=\s*"?([^";]+)"?/i', $header, $m)) {
+            return str_replace(' ', '_', trim($m[1], '"'));
+        }
+
+        return $fallback;
     }
 
     private function encodeReportPreviewParams($params)
@@ -416,9 +396,11 @@ class CxReportsClient
             $prepared_params['timezone'] = 'UTC';
         }
         if (!empty($params['format'])) {
-            $prepared_params['format'] = $params['format'];
+            $prepared_params['format'] = $params['format'] instanceof DocumentFileFormat
+                ? $params['format']->value
+                : $params['format'];
         } else {
-            $prepared_params['format'] = DocumentFIleFormat::pdf;
+            $prepared_params['format'] = DocumentFileFormat::pdf->value;
         }
         if (!empty($params['includeAttachments'])) {
             $prepared_params['includeAttachments'] = $params['includeAttachments'];

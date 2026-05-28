@@ -2,7 +2,7 @@
 
 namespace CxReports\Models;
 
-class Template
+class ReportTemplate
 {
     public $id;
     public $name;
