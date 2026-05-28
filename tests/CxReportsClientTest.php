@@ -18,11 +18,15 @@ class CxReportsClientTest extends TestCase
 
     protected function setUp(): void
     {
-        $url = "";
-        $workspace_id = 0;
-        $pat = "";
-        $client = new CxReportsClient($url, $workspace_id, $pat);
-        $this->client = $client;
+        $url = getenv('CX_REPORTS_URL') ?: '';
+        $workspace_id = getenv('CX_REPORTS_WORKSPACE_ID') ?: 0;
+        $pat = getenv('CX_REPORTS_PAT') ?: '';
+
+        if ($url === '' || $pat === '') {
+            $this->markTestSkipped('Live test requires CX_REPORTS_URL, CX_REPORTS_WORKSPACE_ID, and CX_REPORTS_PAT to be set.');
+        }
+
+        $this->client = new CxReportsClient($url, $workspace_id, $pat);
     }
 
     public function testListReports()
