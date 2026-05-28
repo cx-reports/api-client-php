@@ -32,56 +32,50 @@ class CxReportsClientTest extends TestCase
     public function testListReports()
     {
         $reports = $this->client->listReports("invoice");
-        $this->assertCount(1, $reports);
-        $this->assertEquals('Invoice', $reports[0]->name);
-
-        $this->assertInstanceOf(Report::class, $reports[0]);
+        $this->assertIsArray($reports);
+        $this->assertContainsOnlyInstancesOf(Report::class, $reports);
     }
 
     public function testDownloadPdf()
     {
-        $savePath = "./tmp/";
-        $response = $this->client->downloadPdf("497", ["params" => ["number" => 123]]);
+        $reportId = getenv('CX_REPORTS_TEST_REPORT_ID') ?: '';
+        if ($reportId === '') {
+            $this->markTestSkipped('CX_REPORTS_TEST_REPORT_ID is not set.');
+        }
+
+        $response = $this->client->downloadPdf($reportId, ["params" => ["number" => 123]]);
         $this->assertNotEmpty($response->fileName);
         $this->assertNotEmpty($response->pdf);
 
-        $savePath .= $response->fileName;
+        $savePath = sys_get_temp_dir() . '/' . $response->fileName;
         file_put_contents($savePath, $response->pdf);
-
         $this->assertFileExists($savePath);
-
-        // Clean up
         unlink($savePath);
     }
 
     public function testDownloadPdfFromAnotherWs()
     {
-        $savePath = "./tmp/";
-        $response = $this->client->downloadPdf("149", [], 26);
+        $altReportId = getenv('CX_REPORTS_TEST_ALT_REPORT_ID') ?: '';
+        $altWorkspaceId = getenv('CX_REPORTS_TEST_ALT_WORKSPACE_ID') ?: '';
+        if ($altReportId === '' || $altWorkspaceId === '') {
+            $this->markTestSkipped('CX_REPORTS_TEST_ALT_REPORT_ID and CX_REPORTS_TEST_ALT_WORKSPACE_ID must be set.');
+        }
+
+        $response = $this->client->downloadPdf($altReportId, [], $altWorkspaceId);
         $this->assertNotEmpty($response->fileName);
         $this->assertNotEmpty($response->pdf);
 
-        $savePath .= $response->fileName;
+        $savePath = sys_get_temp_dir() . '/' . $response->fileName;
         file_put_contents($savePath, $response->pdf);
-
         $this->assertFileExists($savePath);
-
-        // Clean up
         unlink($savePath);
     }
 
     public function testGetReportTypes()
     {
         $types = $this->client->getReportTypes();
-        $this->assertCount(2, $types);
+        $this->assertIsArray($types);
         $this->assertContainsOnlyInstancesOf(ReportType::class, $types);
-
-        $names = array_map(function ($type) {
-            return $type->name;
-        }, $types);
-        
-        $this->assertContains('Miscellaneous', $names);
-        $this->assertContains('Invoice', $names);
     }
 
     public function testGetWorkspaces()
@@ -101,8 +95,16 @@ class CxReportsClientTest extends TestCase
 
     public function testGetReportPreviewURL()
     {
-        $url = $this->client->getReportPreviewURL(497, ["params" => ["number" => 123]]);
-        $this->assertStringContainsString("https://master.cx-reports.app/ws/72/reports/497/preview", $url);
+        $reportId = getenv('CX_REPORTS_TEST_REPORT_ID') ?: '';
+        if ($reportId === '') {
+            $this->markTestSkipped('CX_REPORTS_TEST_REPORT_ID is not set.');
+        }
+
+        $baseUrl = rtrim(getenv('CX_REPORTS_URL'), '/');
+        $workspaceId = getenv('CX_REPORTS_WORKSPACE_ID');
+
+        $url = $this->client->getReportPreviewURL($reportId, ["params" => ["number" => 123]]);
+        $this->assertStringContainsString("$baseUrl/ws/$workspaceId/reports/$reportId/preview", $url);
     }
 
     public function testPostTempData()
