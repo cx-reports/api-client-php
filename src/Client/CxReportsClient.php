@@ -57,7 +57,7 @@ class CxReportsClient
             $data = $this->processResponse($response);
             return new TemporaryFileStatusResponse($data);
         } catch (RequestException $e) {
-            throw new \Exception('Error getting export status: ' . $e->getMessage());
+            throw new \Exception('Error getting export status: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -73,7 +73,7 @@ class CxReportsClient
                 'pdf' => $pdf,
             ]);
         } catch (RequestException $e) {
-            throw new \Exception('Error downloading export content: ' . $e->getMessage());
+            throw new \Exception('Error downloading export content: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -89,7 +89,7 @@ class CxReportsClient
                 return new Job($jobData);
             }, $data);
         } catch (RequestException $e) {
-            throw new \Exception('Error fetching jobs: ' . $e->getMessage());
+            throw new \Exception('Error fetching jobs: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -103,7 +103,7 @@ class CxReportsClient
             $data = $this->processResponse($response);
             return new JobRun($data);
         } catch (RequestException $e) {
-            throw new \Exception('Error starting new Job Run: ' . $e->getMessage());
+            throw new \Exception('Error starting new Job Run: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -115,7 +115,7 @@ class CxReportsClient
             $data = $this->processResponse($response);
             return new JobRunStatus($data);
         } catch (RequestException $e) {
-            throw new \Exception('Error fetching JobRun status: ' . $e->getMessage());
+            throw new \Exception('Error fetching JobRun status: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -127,7 +127,7 @@ class CxReportsClient
             $data = $this->processResponse($response);
             return new AsyncReportGenerationResponse($data);
         } catch (RequestException $e) {
-            throw new \Exception('Error generating Job Run review document: ' . $e->getMessage());
+            throw new \Exception('Error generating Job Run review document: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -138,7 +138,7 @@ class CxReportsClient
             $this->client->post($url);
             return true;
         } catch (RequestException $e) {
-            throw new \Exception('Error delivering job run entries: ' . $e->getMessage());
+            throw new \Exception('Error delivering job run entries: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -154,7 +154,7 @@ class CxReportsClient
                 return new Report($reportData);
             }, $data);
         } catch (RequestException $e) {
-            throw new \Exception('Error fetching reports: ' . $e->getMessage());
+            throw new \Exception('Error fetching reports: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -169,7 +169,7 @@ class CxReportsClient
                 return new ReportPage($pageData);
             }, $data);
         } catch (RequestException $e) {
-            throw new \Exception('Error fetching report pages: ' . $e->getMessage());
+            throw new \Exception('Error fetching report pages: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -188,7 +188,7 @@ class CxReportsClient
                 'pdf' => $pdf,
             ]);
         } catch (RequestException $e) {
-            throw new \Exception('Error downloading PDF: ' . $e->getMessage());
+            throw new \Exception('Error downloading PDF: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -207,7 +207,7 @@ class CxReportsClient
                 'pdf' => $pdf,
             ]);
         } catch (RequestException $e) {
-            throw new \Exception('Error downloading document: ' . $e->getMessage());
+            throw new \Exception('Error downloading document: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -221,7 +221,7 @@ class CxReportsClient
             $exportResponse = $this->processResponse($response);
             return new AsyncReportGenerationResponse($exportResponse);
         } catch (RequestException $e) {
-            throw new \Exception('Failed to start async export: ' . $e->getMessage());
+            throw new \Exception('Failed to start async export: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -235,7 +235,7 @@ class CxReportsClient
                 return new ReportType($typeData);
             }, $types);
         } catch (RequestException $e) {
-            throw new \Exception('Error fetching report types: ' . $e->getMessage());
+            throw new \Exception('Error fetching report types: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -249,7 +249,7 @@ class CxReportsClient
                 return new ReportThemeListItem($themeData);
             }, $data);
         } catch (RequestException $e) {
-            throw new \Exception('Error fetching themes: ' . $e->getMessage());
+            throw new \Exception('Error fetching themes: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -263,7 +263,7 @@ class CxReportsClient
                 return new ReportTemplate($templateData);
             }, $data);
         } catch (RequestException $e) {
-            throw new \Exception('Error fetching templates: ' . $e->getMessage());
+            throw new \Exception('Error fetching templates: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -277,7 +277,7 @@ class CxReportsClient
                 return new Workspace($workspaceData);
             }, $data);
         } catch (RequestException $e) {
-            throw new \Exception('Error fetching workspaces: ' . $e->getMessage());
+            throw new \Exception('Error fetching workspaces: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -289,7 +289,7 @@ class CxReportsClient
             $data = $this->processResponse($response);
             return new NonceToken($data);
         } catch (RequestException $e) {
-            throw new \Exception('Error fetching nonce token: ' . $e->getMessage());
+            throw new \Exception('Error fetching nonce token: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -326,7 +326,7 @@ class CxReportsClient
             ]);
             return new TemporaryData(json_decode($response->getBody(), true));
         } catch (RequestException $e) {
-            throw new \Exception('Error posting temporary data: ' . $e->getMessage());
+            throw new \Exception('Error posting temporary data: ' . $e->getMessage() . $this->responseBodySuffix($e));
         }
     }
 
@@ -347,6 +347,15 @@ class CxReportsClient
     private function buildUrl($path)
     {
         return $this->url . '/api/v1/' . $path;
+    }
+
+    private function responseBodySuffix(RequestException $e)
+    {
+        if (!$e->hasResponse()) {
+            return '';
+        }
+        $body = (string) $e->getResponse()->getBody();
+        return $body === '' ? '' : "\nResponse body: " . $body;
     }
 
     private function extractFilenameFromContentDisposition($response, $fallback = 'download')
