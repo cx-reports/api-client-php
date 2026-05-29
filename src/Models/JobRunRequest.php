@@ -2,7 +2,7 @@
 
 namespace CxReports\Models;
 
-class JobRunRequest
+class JobRunRequest implements \JsonSerializable
 {
     public $params;
     public $data;
@@ -11,5 +11,12 @@ class JobRunRequest
     {
         $this->params = $data['params'] ?? null;
         $this->data = $data['data'] ?? null;
+    }
+
+    public function jsonSerialize(): \stdClass
+    {
+        return (object) array_filter(get_object_vars($this), function ($v) {
+            return $v !== null;
+        });
     }
 }

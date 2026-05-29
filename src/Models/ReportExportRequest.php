@@ -2,7 +2,7 @@
 
 namespace CxReports\Models;
 
-class ReportExportRequest
+class ReportExportRequest implements \JsonSerializable
 {
     public $params;
     public $data;
@@ -23,5 +23,12 @@ class ReportExportRequest
         $this->includeAttachments = $data['includeAttachments'] ?? null;
         $this->theme = $data['theme'] ?? null;
         $this->template = $data['template'] ?? null;
+    }
+
+    public function jsonSerialize(): \stdClass
+    {
+        return (object) array_filter(get_object_vars($this), function ($v) {
+            return $v !== null;
+        });
     }
 }

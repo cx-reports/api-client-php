@@ -2,7 +2,7 @@
 
 namespace CxReports\Models;
 
-class AsyncReportGenerationRequest
+class AsyncReportGenerationRequest implements \JsonSerializable
 {
     public $params;
     public $data;
@@ -27,5 +27,12 @@ class AsyncReportGenerationRequest
         $this->tempDataId = $data['tempDataId'] ?? null;
         $this->theme = $data['theme'] ?? null;
         $this->template = $data['template'] ?? null;
+    }
+
+    public function jsonSerialize(): \stdClass
+    {
+        return (object) array_filter(get_object_vars($this), function ($v) {
+            return $v !== null;
+        });
     }
 }
